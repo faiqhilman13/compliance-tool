@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model ReferenceDoc {
+  id          String   @id @default(cuid())
+  name        String
+  s3Key       String   @unique
+  textContent String
+  isPreloaded Boolean  @default(false)
+  requirements Requirement[]
+  evaluations Evaluation[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Requirement {
+  id            String               @id @default(cuid())
+  referenceId   String
+  reference     ReferenceDoc          @relation(fields: [referenceId], references: [id], onDelete: Cascade)
+  text          String
+  criticality   String
+  evidenceNeeded String
+  results       RequirementResult[]
+  createdAt     DateTime             @default(now())
+}
+
+model Evaluation {
+  id             String        @id @default(cuid())
+  referenceId    String
+  reference      ReferenceDoc  @relation(fields: [referenceId], references: [id])
+  status         String        @default("PENDING")
+  overallScore   Float?
+  summary        String?
+  submittedFiles SubmittedFile[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  completedAt    DateTime?
+}
+
+model SubmittedFile {
+  id            String              @id @default(cuid())
+  evaluationId  String
+  evaluation    Evaluation          @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  fileName      String
+  s3Key         String
+  fileScore     Float?
+  results       RequirementResult[]
+  createdAt     DateTime            @default(now())
+}
+
+model RequirementResult {
+  id              String         @id @default(cuid())
+  submittedFileId String
+  submittedFile   SubmittedFile  @relation(fields: [submittedFileId], references: [id], onDelete: Cascade)
+  requirementId   String
+  requirement     Requirement    @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  status          String
+  confidence      Float
+  evidence        String?
+  explanation     String?
+  createdAt       DateTime       @default(now())
+}
